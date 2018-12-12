@@ -265,6 +265,186 @@ def calculate_cong_hrs(filesID, outDir, dirData_b, percentile_ff, time_instance)
     return x
 
 
+def calculate_travelt_avg(filesID, outDir, dirData_b, percentile_ff, time_instance):
+    #extract data from 2015 database  
+    df = pd.DataFrame()
+    cnt = 0
+    filtered_files_list = []
+    dir_ = os.path.join(dirData_b)
+    print(dir_ )
+    tmc_net_list = zload(outDir + 'tmc_net_list.pkz')
+    counties = zload(outDir + 'counties.pkz')
+    tmc_free_flow = pd.read_pickle(outDir + 'free_flow_speed_ ' + filesID + '.pkz')
+    free_flow_ov_mean = tmc_free_flow.mean()
+    tmc_free_flow[tmc_free_flow==0] = free_flow_ov_mean  #delete zeros
+    tmc_free_flow = tmc_free_flow.to_dict()
+    
+    capacity_data = pd.read_pickle( outDir + 'capacity_data_' + filesID + '.pkz')
+    capacity_data = capacity_data[['LENGTH', 'AB_AMCAPAC']]
+    capacity_data_c = capacity_data['AB_'+ 'AM' +'CAPAC'].to_dict()
+    capacity_data_l = capacity_data['LENGTH'].to_dict()
+    
+    length_mode = stats.mode(capacity_data_l.values()).mode[0]
+    
+    
+    del capacity_data
+    
+    #define dictionary
+    x = {}
+    travel_time_s = {}
+    travel_time_cnt = {}
+    for tmc in tmc_net_list:
+        x[tmc] = []
+        travel_time_s[tmc]  = 0
+        travel_time_cnt[tmc]  = 0
+        #x[tmc]['cong'] = 0 
+        #x[tmc]['no_cong'] = 0 
+    
+    for root,dirs,files in os.walk(dir_):
+        for file in files:
+            #df = pd.DataFrame()
+            if file.endswith(".csv"):
+                iter_csv = pd.read_csv(root + '/' +  file, iterator=True, chunksize=200000)
+                for chunk in iter_csv:
+                    if  len(chunk) == 0:
+                        continue
+                    chunk['tmc_code'] = chunk['tmc']# ONLY FOR 2012
+                    chunk['year'] = (len(chunk))*[2012]# ONLY FOR 2012
+                    chunk['measurement_tstamp'] = pd.to_datetime(chunk[['year', 'month', 'day', 'hour', 'minute']]) # ONLY FOR 2012
+                    chunk = chunk[['tmc_code', 'measurement_tstamp', 'travel_time']] #for 2012
+                    
+                    #chunk = chunk[['tmc_code', 'measurement_tstamp', 'travel_time_minutes']] # For 2015
+                    #chunk['travel_time'] = chunk['travel_time_minutes'] # for 2015
+                    #chunk['measurement_tstamp'] = pd.to_datetime(chunk['measurement_tstamp'], format='%Y-%m-%d %H:%M:%S') #for 2015
+                    
+                    chunk = chunk.set_index('measurement_tstamp')
+                    chunk['dayWeek'] = chunk.index.dayofweek
+                    chunk = chunk[chunk['dayWeek'].isin(daysWeek)]
+                    if  len(chunk) == 0:
+                        continue
+                    chunk['hr'] = chunk.index.hour
+                    chunk = chunk[['tmc_code', 'hr', 'travel_time']]
+                    chunk = chunk.reset_index()
+                    df = chunk.set_index('measurement_tstamp')
+                    df['count'] = 1
+                    
+                    df = df[df['hr'].isin(time_instance)] #filter for AM
+                    
+                    df = df.groupby('tmc_code').sum()
+                    
+                    df = df.reset_index()
+                    
+                    if  len(df) == 0:
+                        continue
+                    
+                    tmcs = travel_time_s.keys()
+                    for tmc in list(df['tmc_code']):
+                        if tmc not in tmcs:
+                            travel_time_s[tmc] = 0
+                            travel_time_cnt[tmc] = 0
+                    for idx, row2 in df.iterrows():
+                        
+                        tmc = row2['tmc_code']          
+                        travel_time = row2['travel_time']
+                        counts = row2['count']
+                            
+                        travel_time_s[tmc] += travel_time
+                        travel_time_cnt[tmc]  += counts
+                        
+                        cnt += counts
+                        
+                    print(file + ":" + str(cnt))
+    
+    for tmc in travel_time_s.keys():
+        x[tmc] = 0
+        try:
+            x[tmc] = travel_time_s[tmc] / travel_time_cnt[tmc]
+        except:
+            x[tmc] = "NA"
+
+    return x
+
+
+
+def calculate_travelt_vec(filesID, outDir, dirData_b, percentile_ff, time_instance):
+    #extract data from 2015 database  
+    df = pd.DataFrame()
+    cnt = 0
+    filtered_files_list = []
+    dir_ = os.path.join(dirData_b)
+    print(dir_ )
+    tmc_net_list = zload(outDir + 'tmc_net_list.pkz')
+    counties = zload(outDir + 'counties.pkz')
+    tmc_free_flow = pd.read_pickle(outDir + 'free_flow_speed_ ' + filesID + '.pkz')
+    free_flow_ov_mean = tmc_free_flow.mean()
+    tmc_free_flow[tmc_free_flow==0] = free_flow_ov_mean  #delete zeros
+    tmc_free_flow = tmc_free_flow.to_dict()
+    
+    capacity_data = pd.read_pickle( outDir + 'capacity_data_' + filesID + '.pkz')
+    capacity_data = capacity_data[['LENGTH', 'AB_AMCAPAC']]
+    capacity_data_c = capacity_data['AB_'+ 'AM' +'CAPAC'].to_dict()
+    capacity_data_l = capacity_data['LENGTH'].to_dict()
+    
+    length_mode = stats.mode(capacity_data_l.values()).mode[0]
+    
+    
+    del capacity_data
+    
+    #define dictionary
+    x = {}
+    for tmc in tmc_net_list:
+        x[tmc] = []
+        #x[tmc]['cong'] = 0 
+        #x[tmc]['no_cong'] = 0 
+    
+    for root,dirs,files in os.walk(dir_):
+        for file in files:
+            #df = pd.DataFrame()
+            if file.endswith(".csv"):
+                iter_csv = pd.read_csv(root + '/' +  file, iterator=True, chunksize=200000)
+                for chunk in iter_csv:
+                    if  len(chunk) == 0:
+                        continue
+                    chunk['tmc_code'] = chunk['tmc']# ONLY FOR 2012
+                    chunk['year'] = (len(chunk))*[2012]# ONLY FOR 2012 
+                    chunk['measurement_tstamp'] = pd.to_datetime(chunk[['year', 'month', 'day', 'hour', 'minute']]) # ONLY FOR 2012
+                    chunk = chunk[['tmc_code', 'measurement_tstamp', 'speed']]
+                    chunk['measurement_tstamp'] = pd.to_datetime(chunk['measurement_tstamp'], format='%Y-%m-%d %H:%M:%S')
+                    chunk = chunk.set_index('measurement_tstamp')
+                    chunk['dayWeek'] = chunk.index.dayofweek
+                    chunk = chunk[chunk['dayWeek'].isin(daysWeek)]
+                    if  len(chunk) == 0:
+                        continue
+                    chunk['hr'] = chunk.index.hour
+                    chunk = chunk[['tmc_code', 'hr', 'speed']]
+                    chunk = chunk.reset_index()
+                    chunk = chunk.set_index('measurement_tstamp')
+                    
+                    
+                    chunk = chunk[chunk['hr'].isin(time_instance)] #filter for AM
+                    
+                    if  len(chunk) == 0:
+                        continue
+        
+                    for idx, row2 in chunk.iterrows():
+                        tmc = row2['tmc_code']
+                        try:
+                            length = capacity_data_l[tmc]
+                        except:
+                            length = length_mode                   
+                        speed = row2['speed']
+                        speed = max(speed, 2)
+                        travel_time = length/speed
+                        try:
+                            x[tmc].append(travel_time)
+                        except:
+                            x[tmc] = []
+                            x[tmc].append(travel_time)
+                        cnt += 1
+                    print(file + ":" + str(cnt))
+    return x
+
+
 
 def create_cong_shpFiles(outDir, filesID, dirShpFile, timeInstances):
     # creating shp file
@@ -288,6 +468,40 @@ def create_cong_shpFiles(outDir, filesID, dirShpFile, timeInstances):
         cong_shp.to_file(outDir + "cong_" + instance + '_' +  filesID + ".shp")
         
         
+        
+
+def create_travelT_shpFiles(outDir, filesID, dirShpFile, timeInstances):
+    # creating shp file
+    tmc_net_list = zload(outDir + 'tmc_net_list.pkz')
+    for instance in timeInstances.keys():
+        cong_hrs = {}
+        x = zload(outDir+ 'avg_travelT_' + instance + '_' + filesID +  '.pkz' )
+        
+        x_val = []
+        x_tmc = []
+        for i in x.keys():
+           # try:
+           #     x_1 = np.float(x[i])
+            #except:
+            #    del x[i]
+                
+            x_ = x[i]
+            x_val.append(x_)
+        
+        x_val = [x_val[i] for i in range(len(x_val)) if str(x_val[i]) != 'nan']
+        x_tmc = [x.keys()[i] for i in range(len(x_val)) if str(x_val[i]) != 'nan']
+
+        x_val = [x_val[i] for i in range(len(x_val)) if str(x_val[i]) != 'NA']
+        x_tmc = [x.keys()[i] for i in range(len(x_val)) if str(x_val[i]) != 'NA']
+        
+        
+        df = pd.DataFrame()
+        df['TMC']  = x_tmc
+        df['travelT'] = x_val
+        
+        fullNetwork = geopandas.read_file(dirShpFile)
+        travelT_shp = pd.merge(fullNetwork, df, on='TMC')
+        travelT_shp.to_file(outDir + "travelT_" + instance + '_' +  filesID + ".shp")
         
     
 def unzip_2012_data(outDir, files_dir, dirFilteredData):

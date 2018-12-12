@@ -1,7 +1,7 @@
 # Parameters
 dirShpFile = 'G:/My Drive/MPO/INRIX/INRIX_shapefile_road_network/INRIX_TMC_Road_Network.shp'
 dirTmcLookup = 'G:/Team Drives/MPO 2015/INRIX_2015_Shapefile/Master_TMC_Lookup.xlsx'
-dirData = 'G:/Team Drives/MPO 2015/INRIX_byQuarter/few' 
+dirData = 'G:/Team Drives/MPO 2015/INRIX_byQuarter/fewer' 
 dirData_l = 'G:/Team Drives/MPO 2015/INRIX_byQuarter/4-6' 
 
 filesID = '2015_4-6_new'

@@ -7,6 +7,8 @@ Created on Fri Oct 26 20:49:51 2018
 
 
 # Import libraries
+import os 
+os.chdir('G:/My Drive/Github/INRIX_vis/main')
 from utils import *
 execfile('parameters.py')
 execfile('functions.py')
@@ -42,5 +44,14 @@ instance = "all"
 x = calculate_cong_hrs(filesID, outDir, dirData_l, percentile_free_flow, timeInstances[instance])
 zdump(x, outDir + 'cong_count_' + instance + '.pkz' )
 
+    
+# calculate average travel times 
+for instance in timeInstances.keys():
+	travel_t_x = calculate_travelt_avg(filesID, outDir, dirFilteredData, percentile_free_flow, timeInstances[instance]) # for 2012 dirFilteredData for 2015 dirData_l
+	zdump(travel_t_x, outDir + 'avg_travelT_' + instance + '_' + filesID +  '.pkz') 
+
+
 
 create_cong_shpFiles(outDir, filesID, dirShpFile, timeInstances)
+
+create_travelT_shpFiles(outDir, filesID, dirShpFile, timeInstances)
