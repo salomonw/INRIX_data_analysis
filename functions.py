@@ -311,10 +311,9 @@ def calculate_travelt_avg(filesID, outDir, dirData_b, percentile_ff, time_instan
                     chunk['tmc_code'] = chunk['tmc']# ONLY FOR 2012
                     chunk['year'] = (len(chunk))*[2012]# ONLY FOR 2012
                     chunk['measurement_tstamp'] = pd.to_datetime(chunk[['year', 'month', 'day', 'hour', 'minute']]) # ONLY FOR 2012
-                    chunk = chunk[['tmc_code', 'measurement_tstamp', 'travel_time']] #for 2012
+                    chunk2= chunk
+                    chunk = chunk[['tmc_code', 'measurement_tstamp', 'speed']]
                     
-                    #chunk = chunk[['tmc_code', 'measurement_tstamp', 'travel_time_minutes']] # For 2015
-                    #chunk['travel_time'] = chunk['travel_time_minutes'] # for 2015
                     #chunk['measurement_tstamp'] = pd.to_datetime(chunk['measurement_tstamp'], format='%Y-%m-%d %H:%M:%S') #for 2015
                     
                     chunk = chunk.set_index('measurement_tstamp')
@@ -323,7 +322,7 @@ def calculate_travelt_avg(filesID, outDir, dirData_b, percentile_ff, time_instan
                     if  len(chunk) == 0:
                         continue
                     chunk['hr'] = chunk.index.hour
-                    chunk = chunk[['tmc_code', 'hr', 'travel_time']]
+                    chunk = chunk[['tmc_code', 'hr', 'speed']]
                     chunk = chunk.reset_index()
                     df = chunk.set_index('measurement_tstamp')
                     df['count'] = 1
@@ -345,7 +344,7 @@ def calculate_travelt_avg(filesID, outDir, dirData_b, percentile_ff, time_instan
                     for idx, row2 in df.iterrows():
                         
                         tmc = row2['tmc_code']          
-                        travel_time = row2['travel_time']
+                        travel_time = row2['speed']
                         counts = row2['count']
                             
                         travel_time_s[tmc] += travel_time
@@ -475,7 +474,7 @@ def create_travelT_shpFiles(outDir, filesID, dirShpFile, timeInstances):
     tmc_net_list = zload(outDir + 'tmc_net_list.pkz')
     for instance in timeInstances.keys():
         cong_hrs = {}
-        x = zload(outDir+ 'avg_travelT_' + instance + '_' + filesID +  '.pkz' )
+        x = zload(outDir+ 'avg_speed_' + instance + '_' + filesID +  '.pkz' )
         
         x_val = []
         x_tmc = []
@@ -538,3 +537,9 @@ def unzip_2012_data(outDir, files_dir, dirFilteredData):
                pd.to_pickle(df2, outDir +'filtered_tmc_data/' + file[:-4]  +'.pkz')
                #df2.to_csv(out_dir + 'filtered_tmc_' + file[:-4]  +'.csv')
                print(file + ': unzipped !')
+
+
+def t_times_matrix(outDir, files_dir, zipCodeDir, zipCodeFile):
+    zipCodes = geopandas.read_file(zipCodeDir  + zipCodeFile )
+    
+    

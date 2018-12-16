@@ -48,10 +48,14 @@ zdump(x, outDir + 'cong_count_' + instance + '.pkz' )
 # calculate average travel times 
 for instance in timeInstances.keys():
 	travel_t_x = calculate_travelt_avg(filesID, outDir, dirFilteredData, percentile_free_flow, timeInstances[instance]) # for 2012 dirFilteredData for 2015 dirData_l
-	zdump(travel_t_x, outDir + 'avg_travelT_' + instance + '_' + filesID +  '.pkz') 
+	zdump(travel_t_x, outDir + 'avg_speed_' + instance + '_' + filesID +  '.pkz') 
 
 
 
 create_cong_shpFiles(outDir, filesID, dirShpFile, timeInstances)
 
 create_travelT_shpFiles(outDir, filesID, dirShpFile, timeInstances)
+
+
+execfile('comparisonYears.py')
+
